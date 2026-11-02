@@ -1,0 +1,14 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.VestraData=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
+const categories=['Жакеты','Рубашки','Брюки','Платья','Трикотаж','Обувь','Сумки','Другое'];
+function validatePhoto(file){if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Выберите JPEG, PNG или WebP.');if(!file.size)throw Error('Файл пустой. Выберите другое фото.');if(file.size>15*1024*1024)throw Error('Размер фото должен быть не больше 15 МБ.');return file}
+function normalizeItem(value){const name=String(value.name||'').trim().slice(0,80);if(!name)throw Error('Укажите название вещи.');if(!categories.includes(value.category))throw Error('Выберите категорию вещи.');return {name,category:value.category,color:String(value.color||'').trim().slice(0,40)}}
+function filterProducts(items,query,category){query=String(query||'').trim().toLocaleLowerCase('ru');return items.filter(p=>(category==='Все'||p.category===category)&&[p.name,p.shop,p.color].join(' ').toLocaleLowerCase('ru').includes(query))}
+function createSelectionController(initial,persist,onChange){let state=new Set(initial),queue=Promise.resolve();return {toggle(key){const operation=queue.then(async()=>{const next=new Set(state);next.has(key)?next.delete(key):next.add(key);await persist([...next]);state=next;onChange(next)});queue=operation.catch(()=>{});return operation}}}
+function createUndoController(persist,onRestore){let item=null,busy=false;return {offer(value){item=value},pending(){return item},async restore(){if(busy||!item)return false;busy=true;const snapshot=item;try{await persist(snapshot);onRestore(snapshot);if(item===snapshot)item=null;return true}finally{busy=false}}}}
+const products=[
+{id:'mango-27081264',name:'Пестрый жакет из трикотажа',shop:'MANGO Казахстан',category:'Жакеты',color:'Чёрный',image:'https://media.mango.com/is/image/punto/27081264-99-900?wid=600',url:'https://shop.mango.com/kz/ru/p/женская-мода/джемперы-и-кардиганы/кардиганы/пестрыи-жакет-из-трикотажа/27081264/99/00'},
+{id:'mango-17084078',name:'Прямые брюки с посадкой на талии',shop:'MANGO Казахстан',category:'Брюки',color:'Экрю',image:'https://media.mango.com/is/image/punto/17084078-05-900?wid=600',url:'https://shop.mango.com/kz/ru/p/женская-мода/брюки/straight/прямые-брюки-с-посадкои-на-талии/17084078/05/00'},
+{id:'mango-27049068',name:'Хлопковая рубашка в клетку',shop:'MANGO Казахстан',category:'Рубашки',color:'Синий',image:'https://media.mango.com/is/image/punto/27049068-52-900?wid=600',url:'https://shop.mango.com/kz/ru/p/женская-мода/рубашки-и-блузки/рубашки/хлопковая-рубашка-в-клетку/27049068/52/00'}
+];return {categories,validatePhoto,normalizeItem,filterProducts,products,createSelectionController,createUndoController};
+});
+
