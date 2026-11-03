@@ -1,8 +1,8 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.VestraData=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
-const categories=['Жакеты','Рубашки','Брюки','Платья','Трикотаж','Обувь','Сумки','Другое'];
+const categories=['Жакеты','Рубашки','Брюки','Платья','Трикотаж','Обувь','Сумки','Верх','Верхняя одежда','Другое'];
 function validatePhoto(file){if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Выберите JPEG, PNG или WebP.');if(!file.size)throw Error('Файл пустой. Выберите другое фото.');if(file.size>15*1024*1024)throw Error('Размер фото должен быть не больше 15 МБ.');return file}
-function normalizeItem(value){const name=String(value.name||'').trim().slice(0,80);if(!name)throw Error('Укажите название вещи.');if(!categories.includes(value.category))throw Error('Выберите категорию вещи.');return {name,category:value.category,color:String(value.color||'').trim().slice(0,40)}}
-function filterProducts(items,query,category){query=String(query||'').trim().toLocaleLowerCase('ru');return items.filter(p=>(category==='Все'||p.category===category)&&[p.name,p.shop,p.color].join(' ').toLocaleLowerCase('ru').includes(query))}
+function normalizeItem(value){const name=String(value.name||'').trim().slice(0,80);if(!name)throw Error('Укажите название вещи.');if(!categories.includes(value.category))throw Error('Выберите категорию вещи.');return {name,category:value.category,color:String(value.color||'').trim().slice(0,40),gender:['men','women','unisex','unknown'].includes(value.gender)?value.gender:'unknown'}}
+function filterProducts(items,query,category,audience='all'){if(typeof VestraCatalog!=='undefined')return VestraCatalog.filter(items,query,category,audience);query=String(query||'').trim().toLocaleLowerCase('ru');return items.filter(p=>(category==='Все'||p.category===category)&&[p.name,p.shop,p.color].join(' ').toLocaleLowerCase('ru').includes(query))}
 function createSelectionController(initial,persist,onChange){let state=new Set(initial),queue=Promise.resolve();return {toggle(key){const operation=queue.then(async()=>{const next=new Set(state);next.has(key)?next.delete(key):next.add(key);await persist([...next]);state=next;onChange(next)});queue=operation.catch(()=>{});return operation}}}
 function createUndoController(persist,onRestore){let item=null,busy=false;return {offer(value){item=value},pending(){return item},async restore(){if(busy||!item)return false;busy=true;const snapshot=item;try{await persist(snapshot);onRestore(snapshot);if(item===snapshot)item=null;return true}finally{busy=false}}}}
 const products=[
@@ -11,4 +11,3 @@ const products=[
 {id:'mango-27049068',name:'Хлопковая рубашка в клетку',shop:'MANGO Казахстан',category:'Рубашки',color:'Синий',image:'https://media.mango.com/is/image/punto/27049068-52-900?wid=600',url:'https://shop.mango.com/kz/ru/p/женская-мода/рубашки-и-блузки/рубашки/хлопковая-рубашка-в-клетку/27049068/52/00'}
 ];return {categories,validatePhoto,normalizeItem,filterProducts,products,createSelectionController,createUndoController};
 });
-
